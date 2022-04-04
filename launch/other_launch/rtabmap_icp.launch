@@ -1,0 +1,58 @@
+<launch>
+  <!-- Create Transform -->
+<!--  <node pkg="tf" type="static_transform_publisher" name="ouster_to_base"
+      args="0.0889 0.0 0.0889 0.0 0.0 0.0 /base_link /os_sensor 500" />
+-->
+
+  <node pkg="rtabmap_ros" type="rtabmap" name="rtabmap" output="screen" args="-d">
+    <param name="frame_id"             type="string" value="base_link"/>
+    <param name="subscribe_depth"      type="bool" value="false"/>
+    <param name="subscribe_rgb"        type="bool" value="false"/>
+    <param name="subscribe_scan"       type="bool" value="false"/>
+    <param name="subscribe_scan_cloud" type="bool" value="true"/>
+    <param name="approx_sync"          type="bool" value="true"/>
+    <param name="queue_size"           value="15"/>
+
+    <remap from="scan_cloud" to="os_cloud_node/points"/>
+  <!--  <remap from="odom" to="/odometry/filtered"/>-->
+    <param name="odom_frame_id"        type="string" value="odom"/>
+    <!--<remap from="imu" to="/os_cloud_node/imu"/>-->
+    <!-- RTAB-Map's parameters -->
+    <param name="odom_tf_angular_variance" type="double" value="0.0005"/>
+    <param name="odom_tf_linear_variance"  type="double" value="0.0001"/>
+    <param name="Icp/Strategy"         	         type="string" value="0"/>
+    <param name="Rtabmap/DetectionRate"          type="string" value="1"/>
+    <param name="RGBD/NeighborLinkRefining"      type="string" value="false"/>
+    <param name="RGBD/ProximityBySpace"          type="string" value="true"/>
+    <param name="RGBD/ProximityMaxGraphDepth"    type="string" value="0"/>
+    <param name="RGBD/ProximityPathMaxNeighbors" type="string" value="1"/>
+    <param name="RGBD/AngularUpdate"             type="string" value="0.005"/>
+    <param name="RGBD/LinearUpdate"              type="string" value="0.05"/>
+    <param name="Mem/NotLinkedNodesKept"         type="string" value="false"/>
+    <param name="Mem/STMSize"                    type="string" value="30"/>
+
+    <param name="Reg/Strategy"                   type="string" value="1"/>
+    <param name="Grid/CellSize"                  type="string" value="0.05"/>
+    <param name="Grid/RangeMax"                  type="string" value="100"/>
+    <param name="Grid/ClusterRadius"             type="string" value="0.1"/>
+    <param name="Grid/GroundIsObstacle"          type="string" value="true"/>
+    <param name="Optimizer/GravitySigma"         type="string" value="0.3"/>
+    <param name="Optimizer/Strategy"             type="string" value="1"/>
+    <param name="Optimizer/Robust"               type="string" value="false"/>
+
+    <!-- ICP parameters -->
+    <param name="Icp/VoxelSize"                  type="string" value="0.05"/>
+    <param name="Icp/PointToPlaneK"              type="string" value="0"/>
+    <param name="Icp/PointToPlaneRadius"         type="string" value="0"/>
+    <param name="Icp/PointToPlane"               type="string" value="false"/>
+    <param name="Icp/Iterations"                 type="string" value="50"/>
+    <param name="Icp/Epsilon"                    type="string" value="0.0"/>
+    <param name="Icp/MaxTranslation"             type="string" value="0.2"/>
+    <param name="Icp/MaxRotation"                type="string" value="0.78"/>
+    <param name="Icp/MaxCorrespondenceDistance"  type="string" value="0.05"/>
+    <param name="Icp/PM"                         type="string" value="true"/>
+    <param name="Icp/PMOutlierRatio"             type="string" value="0.7"/>
+    <param name="Icp/CorrespondenceRatio"        type="string" value="0.1"/>
+  </node>
+
+</launch>

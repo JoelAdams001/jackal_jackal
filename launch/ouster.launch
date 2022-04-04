@@ -1,0 +1,15 @@
+<launch>
+
+  <!-- start cloud nodelet -->
+  <include file="$(find ouster_ros)/ouster.launch">
+    <arg name="sensor_hostname" value="os1-122024000354.local"/>
+    <arg name="metadata" value="os1-122024000354.local.json" />
+  </include>
+
+
+  <!-- Create Transform -->
+<!--  <node pkg="tf" type="static_transform_publisher" name="ouster_to_base"
+      args="0.10815 0.0 0.57298 0.0 0.0 0.0 /base_link /os_sensor 100" />
+-->
+  
+</launch>
