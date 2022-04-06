@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Velodyne + ICP odometry -->
+  <include file="$(find jackal_jackal)/launch/icp_ouster.launch" />
+  <include file="$(find jackal_navigation)/launch/odom_navigation_demo.launch" />
+  <node pkg="tf" type="static_transform_publisher" name="ouster_to_rp"
+      args="0.109 -0.056 -0.079 0.0 0.0 0.0 /os_sensor /laser 100" />
+  <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen" />
+
+    <!-- Run a VoxelGrid filter to clean NaNs and downsample the data -->
+    <node pkg="nodelet" type="nodelet" name="voxel_grid" args="load pcl/VoxelGrid pcl_manager" output="screen">
+      <remap from="~input" to="/os1_cloud_node/points" />
+      <rosparam>
+        filter_field_name: z
+        filter_limit_min: 0.02
+        filter_limit_max: 1.5
+        filter_limit_negative: False
+        leaf_size: 0.25
+      </rosparam>
+    </node>
+
+</launch>
