@@ -1,11 +1,40 @@
 <launch>
+  
+    <!-- 
+    Hand-held 3D lidar mapping example using only a Ouster GEN2 (no camera).
+    Prerequisities: rtabmap should be built with libpointmatcher
+    
+    Example:
+    
+      $ roslaunch rtabmap_ros test_ouster_gen2.launch sensor_hostname:=os-XXXXXXXXXXXX.local udp_dest:=192.168.1.XXX
+      $ rosrun rviz rviz -f map
+      RVIZ: Show TF and /rtabmap/cloud_map topics
+    
+    ISSUE: You may have to reset odometry after receiving the first cloud if the map looks tilted. The problem seems 
+           coming from the first cloud sent by os_cloud_node, which may be poorly synchronized with IMU data.
+           
+    PTP mode (synchronize timestamp with host computer time)
+    
+      * Install:
+      
+        $ sudo apt install linuxptp httpie
+        $ printf "[global]\ntx_timestamp_timeout 10\n" >> ~/os.conf
+      
+      * Running:
+     
+        (replace "XXXXXXXXXXXX" by your ouster serial, as well as XXX by its IP address)
+        (replace "eth0" by the network interface used to communicate with ouster)
+       
+        $ http PUT http://os-XXXXXXXXXXXX.local/api/v1/time/ptp/profile <<< '"default-relaxed"'
+        $ sudo ptp4l -i eth0 -m -f ~/os.conf -S
+        $ roslaunch rtabmap_ros test_ouster_gen2.launch sensor_hostname:=os-XXXXXXXXXXXX.local udp_dest:=192.168.1.XXX ptp:=true
+       
+    -->
 
     <arg name="use_sim_time"  default="false"/>
 
     <!-- Required: -->
     <arg name="frame_id"      default="os_sensor"/>
-    <arg name="imu"           default="/os_cloud_node/imu/data"/>
-    <arg name="cloud"         default="/os_cloud_node/points"/>
     <arg name="scan_20_hz"    default="true"/>
     <arg name="voxel_size"    default="0.15"/>           <!-- indoor: 0.1 to 0.3, outdoor: 0.3 to 0.5 --> 
     <arg name="assemble"      default="false"/>
@@ -18,22 +47,22 @@
     <!-- IMU orientation estimation and publish tf accordingly to os_sensor frame -->
     <node pkg="nodelet" type="nodelet" name="imu_nodelet_manager" args="manager">
       <remap from="imu/data_raw" to="/os_cloud_node/imu"/>
-      <remap from="imu/data" to="$(arg imu)"/>
-    </node><!--
+      <remap from="imu/data" to="/os_cloud_node/imu/data"/>
+    </node>
     <node pkg="nodelet" type="nodelet" name="imu_filter" args="load imu_filter_madgwick/ImuFilterNodelet imu_nodelet_manager">
       <param name="use_mag" value="false"/>
       <param name="world_frame" value="enu"/>
       <param name="publish_tf" value="false"/>
-    </node>-->
+    </node>
     <node pkg="nodelet" type="nodelet" name="imu_to_tf" args="load rtabmap_ros/imu_to_tf imu_nodelet_manager">
-      <remap from="imu/data" to="$(arg imu)"/>
+      <remap from="imu/data" to="/os_cloud_node/imu/data"/>
       <param name="fixed_frame_id" value="$(arg frame_id)"/>
     </node> 
 
     <group ns="rtabmap">
       <node pkg="rtabmap_ros" type="icp_odometry" name="icp_odometry" output="screen">
-        <remap from="scan_cloud" to="$(arg cloud)"/>
-        <remap from="imu"        to="$(arg imu)"/>
+        <remap from="scan_cloud" to="/os_cloud_node/points"/>
+        <remap from="imu"        to="/os_cloud_node/imu/data"/>
         <param name="frame_id"        type="string" value="$(arg frame_id)"/>  
         <param name="odom_frame_id"   type="string" value="odom"/>
         <param     if="$(arg scan_20_hz)" name="expected_update_rate" type="double" value="25"/>
@@ -65,7 +94,7 @@
         <param name="OdomF2M/ScanMaxSize"        type="string" value="15000"/>      
       </node>
 
-      <node pkg="rtabmap_ros" type="rtabmap" name="rtabmap" output="screen" args="">    
+      <node pkg="rtabmap_ros" type="rtabmap" name="rtabmap" output="screen" args="-d">    
         <param name="frame_id"             type="string" value="$(arg frame_id)"/>  
         <param name="subscribe_depth"      type="bool" value="false"/>
         <param name="subscribe_rgb"        type="bool" value="false"/>
@@ -76,8 +105,8 @@
       <!--  <param name="database_path" type="string" value="/home/administrator/rtabmap/rtabmap.db"/>-->
  
         <remap     if="$(arg assemble)" from="scan_cloud" to="assembled_cloud"/>
-        <remap unless="$(arg assemble)" from="scan_cloud" to="$(arg cloud)"/>
-        <remap from="imu"        to="$(arg imu)"/>
+        <remap unless="$(arg assemble)" from="scan_cloud" to="/os_cloud_node/points"/>
+        <remap from="imu"        to="/os_cloud_node/imu/data"/>
      
         <!-- RTAB-Map's parameters -->
         .<param     if="$(arg assemble)" name="Rtabmap/DetectionRate" type="string" value="0"/> <!-- already set 1 Hz in point_cloud_assembler -->
@@ -124,7 +153,7 @@
       </node>
       
       <node if="$(arg assemble)" pkg="rtabmap_ros" type="point_cloud_assembler" name="point_cloud_assembler" output="screen">
-        <remap from="cloud"           to="$(arg cloud)"/>
+        <remap from="cloud"           to="/os_cloud_node/points"/>
         <remap from="odom"            to="odom"/>
         <param name="assembling_time" type="double" value="1" />
         <param name="fixed_frame_id"  type="string" value="" />
